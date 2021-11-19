@@ -1,43 +1,41 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
-import { TestToken__factory } from "../typechain";
+import { CarCarToken__factory } from "../typechain";
 
 chai.use(solidity);
 const { expect } = chai;
 
-describe("Token", () => {
+describe("CarCarToken", () => {
   let tokenAddress: string;
 
   beforeEach(async () => {
     const [deployer] = await ethers.getSigners();
-    const tokenFactory = new TestToken__factory(deployer);
+    const tokenFactory = new CarCarToken__factory(deployer);
     const tokenContract = await tokenFactory.deploy();
     tokenAddress = tokenContract.address;
-
-    expect(await tokenContract.totalSupply()).to.eq(0);
-  });
-  describe("Mint", async () => {
-    it("Should mint some tokens", async () => {
-      const [deployer, user] = await ethers.getSigners();
-      const tokenInstance = new TestToken__factory(deployer).attach(tokenAddress);
-      const toMint = ethers.utils.parseEther("1");
-
-      await tokenInstance.mint(user.address, toMint);
-      expect(await tokenInstance.totalSupply()).to.eq(toMint);
-    });
   });
 
+  describe("Car Car Token", async () => {
+    it("total supply", async () => {
+      const [deployer] = await ethers.getSigners();
+      const tokenInstance = new CarCarToken__factory(deployer).attach(tokenAddress);
+      const totalSupply = await tokenInstance.totalSupply();
+
+      const oneEth = ethers.utils.parseEther("1");
+      expect(totalSupply.toString()).to.eq(ethers.BigNumber.from(10).pow(11).mul(oneEth));
+    })
+  })
   describe("Transfer", async () => {
     it("Should transfer tokens between users", async () => {
       const [deployer, sender, receiver] = await ethers.getSigners();
-      const deployerInstance = new TestToken__factory(deployer).attach(tokenAddress);
+      const deployerInstance = new CarCarToken__factory(deployer).attach(tokenAddress);
       const toMint = ethers.utils.parseEther("1");
 
       await deployerInstance.mint(sender.address, toMint);
       expect(await deployerInstance.balanceOf(sender.address)).to.eq(toMint);
 
-      const senderInstance = new TestToken__factory(sender).attach(tokenAddress);
+      const senderInstance = new CarCarToken__factory(sender).attach(tokenAddress);
       const toSend = ethers.utils.parseEther("0.4");
       await senderInstance.transfer(receiver.address, toSend);
 
@@ -46,13 +44,13 @@ describe("Token", () => {
 
     it("Should fail to transfer with low balance", async () => {
       const [deployer, sender, receiver] = await ethers.getSigners();
-      const deployerInstance = new TestToken__factory(deployer).attach(tokenAddress);
+      const deployerInstance = new CarCarToken__factory(deployer).attach(tokenAddress);
       const toMint = ethers.utils.parseEther("1");
 
       await deployerInstance.mint(sender.address, toMint);
       expect(await deployerInstance.balanceOf(sender.address)).to.eq(toMint);
 
-      const senderInstance = new TestToken__factory(sender).attach(tokenAddress);
+      const senderInstance = new CarCarToken__factory(sender).attach(tokenAddress);
       const toSend = ethers.utils.parseEther("1.1");
 
       // Notice await is on the expect
