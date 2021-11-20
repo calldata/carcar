@@ -3,9 +3,8 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract CarCarNft is ERC1155, Ownable, AccessControl {
+contract CarCarNft is ERC1155, Ownable {
 
     // 4 sort of cars
     uint256 public constant nClassCar = 0;
@@ -26,10 +25,12 @@ contract CarCarNft is ERC1155, Ownable, AccessControl {
     uint256 public constant srClassUpgradeComp = 9;
     uint256 public constant ssrClassUpgradeComp = 10;
 
+    address private minter;
+
     // velodrome
     uint256 public constant velodrome = 11;
 
-    constructor() ERC1155("ipfs://xxxx") {
+    constructor() ERC1155("") {
         // pre minted
         _mint(msg.sender, nClassCar, 400000, "");
         _mint(msg.sender, nClassCar, 80000, "");
@@ -39,14 +40,14 @@ contract CarCarNft is ERC1155, Ownable, AccessControl {
         _mint(msg.sender, velodromeLand, 1000, "");
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
-        return ERC1155.supportsInterface(interfaceId) || AccessControl.supportsInterface(interfaceId);
+    function setMinter(address _minter) external onlyOwner {
+        minter = _minter;
     }
 
     function burn(address to, uint256 tokenId, uint256 amount) external {
         require(to != address(0), "burn zero address");
         require(tokenIdExist(tokenId), "tokenId not exist");
-        require(hasRole("GAME_CONTROLER", msg.sender), "Unauthorized caller");
+        require(minter == msg.sender, "Unauthorized caller");
 
         _burn(to, tokenId, amount);
     }
@@ -54,7 +55,7 @@ contract CarCarNft is ERC1155, Ownable, AccessControl {
     function mint(address to, uint256 tokenId, uint256 amount) external {
         require(to != address(0), "mint to zero address");
         require(tokenIdExist(tokenId), "tokenId not exist");
-        require(hasRole("GAME_CONTROLER", msg.sender), "Unauthorized caller");
+        require(minter == msg.sender, "Unauthorized caller");
 
         _mint(to, tokenId, amount, "");
     }

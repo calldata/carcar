@@ -46,7 +46,7 @@ contract AuctionMarket is Ownable {
 
         require(IERC1155(nftAddress).isApprovedForAll(seller, address(this)), "Not approved"); 
 
-        bytes32 auctionId = keccak256(abi.encodePacked(seller, nftAddress, _tokenId, _price));
+        bytes32 auctionId = keccak256(abi.encodePacked(seller, _tokenId, _price));
 
         // seller append more tokens with same price
         if (auctions[auctionId].seller != address(0)) {
@@ -75,7 +75,7 @@ contract AuctionMarket is Ownable {
         uint256 fee = cost / 100;
         // 1% fee to Market owner
         SafeERC20.safeTransferFrom(IERC20(cctAddress), buyer, address(this), fee);
-        // 99% to seller
+        // the remaining to seller
         SafeERC20.safeTransferFrom(IERC20(cctAddress), buyer, auction.seller, cost - fee);
         IERC1155(nftAddress).safeTransferFrom(auction.seller, buyer, auction.tokenId, auction.amount, "");
     }

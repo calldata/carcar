@@ -3,12 +3,13 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 
-contract CarCarGameLogic is Ownable {
+contract CarCarGameLogic is Ownable, ERC1155Holder {
     using Address for address;
 
     // player's car broken or not
@@ -23,7 +24,11 @@ contract CarCarGameLogic is Ownable {
     address public nftOwner;
 
     event OpenBlindBox(address indexed player);
+    event PlayerCarBroken(address indexed player);
     event CarRepaired(address indexed player, uint256 indexed carClass);
+    event PlayerEnterGame(address indexed player);
+    event PlayerExitGame(address indexed player);
+    event BlindBoxDelivered(address indexed player, uint256 indexed tokenId, uint256 indexed amount);
 
     constructor(address _nftAddress, address _cctAddress, address _carRepairFeeAddress, address _nftOwner) {
         nftAddress = _nftAddress;
@@ -36,31 +41,32 @@ contract CarCarGameLogic is Ownable {
     ///
     /// @param carClass Wich sort of car player want to use to enter the game
     function enterGame(uint256 carClass) external {
-        // TODO: check car class is valid
         address player = msg.sender;
         require(!isCarInGame[player][carClass], "This sort of car is in game");
         isCarInGame[player][carClass] = true;
-        require(IERC1155(nftAddress).isApprovedForAll(address(this), player), "Not approved");
+        require(IERC1155(nftAddress).isApprovedForAll(player, address(this)), "Not approved");
         isCarBroken[player][carClass] = false;
 
         // lock player's car to contract temporarily
         IERC1155(nftAddress).safeTransferFrom(player, address(this), carClass, 1, "");
+
+        emit PlayerEnterGame(player);
     }
 
     /// @dev player call this method to exit the game and check if we should give the car back to him
     ///
     /// @param carClass Which sort of car to exit the game
-    /// @return If the car not broken return true, otherwise false
-    function exitGame(uint256 carClass) external returns(bool) {
+    function exitGame(uint256 carClass) external {
         address player = msg.sender;
-        if (isCarBroken[player][carClass]) {
-            // player's car is brokn down. he needs to repair the car so that we can give it back to him
-            return false;
-        } else {
+        if (!isCarBroken[player][carClass]) {
             isCarInGame[player][carClass] = false;
             // player's car is not broken dwon. we just give it back to him
             IERC1155(nftAddress).safeTransferFrom(address(this), player, carClass, 1, "");
-            return true;
+
+            emit PlayerExitGame(player);
+        } else {
+            // player's car is brokn. he needs to repair the car
+            revert("Player car is broken");
         }
     }
 
@@ -73,9 +79,9 @@ contract CarCarGameLogic is Ownable {
 
         isCarBroken[player][carClass] = false;
         // 50% repair fee be burned
-        SafeERC20.safeTransferFrom(cctAddress, msg.sender, address(0), 5000);
+        SafeERC20.safeTransferFrom(cctAddress, player, address(1), 5000);
         // 50% repair fee as reward to deliver to holder of velodrome
-        SafeERC20.safeTransferFrom(cctAddress, msg.sender, carRepairFeeAddress, 5000);
+        SafeERC20.safeTransferFrom(cctAddress, player, carRepairFeeAddress, 5000);
 
         // emit player's car repaired event
         emit CarRepaired(player, carClass);
@@ -102,20 +108,23 @@ contract CarCarGameLogic is Ownable {
 
     /// @dev let player's car be broken, only owner can call
     ///
-    /// @param whose Player that whose car is broken
+    /// @param player Player that whose car is broken
     /// @param carClass Which sort of car is broken
-    function setCarBroken(address whose, uint256 carClass) external onlyOwner {
-        require(whose != address(0), "Set zero address");
+    function setCarBroken(address player, uint256 carClass) external onlyOwner {
+        require(player != address(0), "Set zero address");
         require(carClass >= 0 && carClass <= 4, "Unknown car type");
-        isCarBroken[whose][carClass] = true;
+        isCarBroken[player][carClass] = true;
+
+        emit PlayerCarBroken(player);
     }
 
     /// @dev give away winner fragment to player
     ///
     /// @param to Player address to give awaty winner fragment
-    function giveAwayWinnerFragment(address to) external onlyOwner {
+    /// @param amount amount to mint
+    function giveAwayWinnerFragment(address to, uint256 amount) external onlyOwner {
         require(to != address(0), "mint to zero address");
-        nftAddress.functionCall(abi.encodeWithSignature("mint(address,uint256,uint256)", to));
+        nftAddress.functionCall(abi.encodeWithSignature("mint(address,uint256,uint256)", to, 5, amount));
     }
 
     /// @dev player claim 1 winner blind box using 10 winner fragments
@@ -157,5 +166,10 @@ contract CarCarGameLogic is Ownable {
         if (tokenId >= 7 && tokenId <= 11) {
             nftAddress.functionCall(abi.encodeWithSignature("mint(address,uint256,uint256)", player, tokenId, amount));
         }
+
+        emit BlindBoxDelivered(player, tokenId, amount);
+
+        // destroy opened blind box
+        nftAddress.functionCall(abi.encodeWithSignature("burn(address,uint256,uint256)", player, 6, amount));
     }
 }
