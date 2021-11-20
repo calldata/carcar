@@ -113,6 +113,7 @@ contract CarCarGameLogic is Ownable, ERC1155Holder {
     function setCarBroken(address player, uint256 carClass) external onlyOwner {
         require(player != address(0), "Set zero address");
         require(carClass >= 0 && carClass <= 4, "Unknown car type");
+        require(isCarInGame[player][carClass], "Player car not in game");
         isCarBroken[player][carClass] = true;
 
         emit PlayerCarBroken(player);
