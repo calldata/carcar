@@ -44,12 +44,16 @@ contract CarCarNft is ERC1155, Ownable, AccessControl {
     }
 
     function burn(address to, uint256 tokenId, uint256 amount) external {
+        require(to != address(0), "burn zero address");
+        require(tokenIdExist(tokenId), "tokenId not exist");
         require(hasRole("GAME_CONTROLER", msg.sender), "Unauthorized caller");
 
         _burn(to, tokenId, amount);
     }
 
     function mint(address to, uint256 tokenId, uint256 amount) external {
+        require(to != address(0), "mint to zero address");
+        require(tokenIdExist(tokenId), "tokenId not exist");
         require(hasRole("GAME_CONTROLER", msg.sender), "Unauthorized caller");
 
         _mint(to, tokenId, amount, "");
@@ -59,7 +63,7 @@ contract CarCarNft is ERC1155, Ownable, AccessControl {
         _setURI(newuri);
     }
 
-    function tokenIdExist(uint256 _tokenId) pure external returns(bool) {
-        return _tokenId >= 0 && _tokenId <= 6;
+    function tokenIdExist(uint256 _tokenId) pure public returns(bool) {
+        return _tokenId >= 0 && _tokenId <= 11;
     }
 }
