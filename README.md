@@ -8,6 +8,14 @@ Before running any command, make sure to install dependencies:
 $ yarn install
 ```
 
+### env variable configuation
+
+```sh
+$ copy .env.example .env
+```
+
+change `MNEMONIC` and `INFURA_API_KEY` with yours
+
 ### Compile
 
 Compile the smart contracts with Hardhat:
@@ -35,8 +43,3 @@ npx hardhat run --network rinkeby ./scripts/deploy.ts
 ```
 npx hardhat verify --network <network> <DEPLOYED_CONTRACT_ADDRESS> "Constructor argument 1"
 ```
-
-### Added plugins
-
-- Gas reporter [hardhat-gas-reporter](https://hardhat.org/plugins/hardhat-gas-reporter.html)
-- Etherscan [hardhat-etherscan](https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html)
