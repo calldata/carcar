@@ -18,6 +18,9 @@ contract CarCarGameLogic is Ownable, ERC1155Holder {
     // player's car in game or not
     mapping(address => mapping(uint256 => bool)) public isCarInGame;
 
+    // burn address
+    address public constant BURN_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     address public nftAddress;
     IERC20 public cctAddress;
     address public carRepairFeeAddress;
@@ -79,7 +82,7 @@ contract CarCarGameLogic is Ownable, ERC1155Holder {
 
         isCarBroken[player][carClass] = false;
         // 50% repair fee be burned
-        SafeERC20.safeTransferFrom(cctAddress, player, address(1), 5000);
+        SafeERC20.safeTransferFrom(cctAddress, player, BURN_ADDRESS, 5000);
         // 50% repair fee as reward to deliver to holder of velodrome
         SafeERC20.safeTransferFrom(cctAddress, player, carRepairFeeAddress, 5000);
 
