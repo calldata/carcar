@@ -26,10 +26,18 @@ contract AuctionMarket is Ownable {
         nftAddress = _nftAddress;
     }
 
+    /// @dev get auction item
+    ///
+    /// @param auctionId auction id
+    /// @return the details of this auction
     function getAuctionItem(bytes32 auctionId) view external returns(Auction memory) {
         return auctions[auctionId];
     }
 
+    /// @dev calculate the auction id
+    ///
+    /// @param auction The auction to calculate
+    /// @return auction id
     function calcItemAuctionId(Auction calldata auction) pure external returns(bytes32) {
         return keccak256(abi.encodePacked(auction.seller, auction.tokenId, auction.price));
     }
