@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract CarCarNft is ERC1155, Ownable {
-
     // 4 sort of cars
     uint256 public constant nClassCar = 0;
     uint256 public constant rClassCar = 1;
@@ -44,7 +43,11 @@ contract CarCarNft is ERC1155, Ownable {
         minter = _minter;
     }
 
-    function burn(address to, uint256 tokenId, uint256 amount) external {
+    function burn(
+        address to,
+        uint256 tokenId,
+        uint256 amount
+    ) external {
         require(to != address(0), "burn zero address");
         require(tokenIdExist(tokenId), "tokenId not exist");
         require(minter == msg.sender, "Unauthorized caller");
@@ -52,7 +55,11 @@ contract CarCarNft is ERC1155, Ownable {
         _burn(to, tokenId, amount);
     }
 
-    function mint(address to, uint256 tokenId, uint256 amount) external {
+    function mint(
+        address to,
+        uint256 tokenId,
+        uint256 amount
+    ) external {
         require(to != address(0), "mint to zero address");
         require(tokenIdExist(tokenId), "tokenId not exist");
         require(minter == msg.sender, "Unauthorized caller");
@@ -64,7 +71,7 @@ contract CarCarNft is ERC1155, Ownable {
         _setURI(newuri);
     }
 
-    function tokenIdExist(uint256 _tokenId) pure public returns(bool) {
+    function tokenIdExist(uint256 _tokenId) public pure returns (bool) {
         return _tokenId >= 0 && _tokenId <= 11;
     }
 }

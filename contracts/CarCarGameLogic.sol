@@ -8,13 +8,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-
 contract CarCarGameLogic is Ownable, ERC1155Holder {
     using Address for address;
 
     // player's car broken or not
     mapping(address => mapping(uint256 => bool)) public isCarBroken;
-    
+
     // player's car in game or not
     mapping(address => mapping(uint256 => bool)) public isCarInGame;
 
@@ -33,7 +32,12 @@ contract CarCarGameLogic is Ownable, ERC1155Holder {
     event PlayerExitGame(address indexed player);
     event BlindBoxDelivered(address indexed player, uint256 indexed tokenId, uint256 indexed amount);
 
-    constructor(address _nftAddress, address _cctAddress, address _carRepairFeeAddress, address _nftOwner) {
+    constructor(
+        address _nftAddress,
+        address _cctAddress,
+        address _carRepairFeeAddress,
+        address _nftOwner
+    ) {
         nftAddress = _nftAddress;
         cctAddress = IERC20(_cctAddress);
         carRepairFeeAddress = _carRepairFeeAddress;
@@ -97,7 +101,7 @@ contract CarCarGameLogic is Ownable, ERC1155Holder {
     function deliverRepairFee(address[] calldata addrs, uint256[] calldata amounts) external onlyOwner {
         require(addrs.length == amounts.length, "length not equal");
 
-        for (uint i = 0; i < addrs.length; i++) {
+        for (uint256 i = 0; i < addrs.length; i++) {
             SafeERC20.safeTransferFrom(cctAddress, carRepairFeeAddress, addrs[i], amounts[i]);
         }
     }
@@ -105,7 +109,7 @@ contract CarCarGameLogic is Ownable, ERC1155Holder {
     /// @dev check if this sort of car is broken
     ///
     /// @param carClass Check which sort of car
-    function carBroken(uint256 carClass) view external returns(bool) {
+    function carBroken(uint256 carClass) external view returns (bool) {
         return isCarBroken[msg.sender][carClass];
     }
 
@@ -158,7 +162,11 @@ contract CarCarGameLogic is Ownable, ERC1155Holder {
     /// @param player Address to deliver
     /// @param tokenId Which sort of token to deliver
     /// @param amount Amount of token
-    function deliverOpenedBlindBox(address player, uint256 tokenId, uint256 amount) external onlyOwner {
+    function deliverOpenedBlindBox(
+        address player,
+        uint256 tokenId,
+        uint256 amount
+    ) external onlyOwner {
         require(player != address(0), "deliver to zero address");
 
         // pre minted

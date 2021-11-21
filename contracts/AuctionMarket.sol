@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-
 contract AuctionMarket is Ownable {
     struct Auction {
         address seller;
@@ -30,7 +29,7 @@ contract AuctionMarket is Ownable {
     ///
     /// @param auctionId auction id
     /// @return the details of this auction
-    function getAuctionItem(bytes32 auctionId) view external returns(Auction memory) {
+    function getAuctionItem(bytes32 auctionId) external view returns (Auction memory) {
         return auctions[auctionId];
     }
 
@@ -38,7 +37,7 @@ contract AuctionMarket is Ownable {
     ///
     /// @param auction The auction to calculate
     /// @return auction id
-    function calcItemAuctionId(Auction calldata auction) pure external returns(bytes32) {
+    function calcItemAuctionId(Auction calldata auction) external pure returns (bytes32) {
         return keccak256(abi.encodePacked(auction.seller, auction.tokenId, auction.price));
     }
 
@@ -47,12 +46,16 @@ contract AuctionMarket is Ownable {
     /// @param _tokenId Token id that use want to sell
     /// @param _price Price that use want to sell
     /// @param _amount Amount that user want to sell
-    function sellItem(uint256 _tokenId, uint256 _price, uint256 _amount) external {
+    function sellItem(
+        uint256 _tokenId,
+        uint256 _price,
+        uint256 _amount
+    ) external {
         require(_amount > 0, "Invalid param");
 
         address seller = msg.sender;
 
-        require(IERC1155(nftAddress).isApprovedForAll(seller, address(this)), "Not approved"); 
+        require(IERC1155(nftAddress).isApprovedForAll(seller, address(this)), "Not approved");
 
         bytes32 auctionId = keccak256(abi.encodePacked(seller, _tokenId, _price));
 
