@@ -2,102 +2,117 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract AuctionMarket is Ownable {
+    using Counters for Counters.Counter;
+
+    Counters.Counter private _auctionId;
+
+    enum Status {
+        OnSell,
+        SoldOut,
+        Revoked
+    }
+
     struct Auction {
+        address nftAddress;
         address seller;
-        uint256 tokenId;
+        uint256[] _tokenIds;
         uint256 price;
-        uint256 amount;
     }
 
-    event NewItemAuctionId(bytes32 indexed auctionId);
+    event CreateNewAuction(uint256 indexed auctionId);
 
-    mapping(bytes32 => Auction) public auctions;
+    // mapping of auctionId to Auction
+    mapping(uint256 => Auction) public auctions;
+
+    // mapping of auction status
+    mapping(uint256 => Status) public auctionStatus;
+
+    // car car token address
     address public immutable cctAddress;
-    address public immutable nftAddress;
 
-    constructor(address _cctAddress, address _nftAddress) {
+    constructor(address _cctAddress) {
         cctAddress = _cctAddress;
-        nftAddress = _nftAddress;
     }
 
-    /// @dev get auction item
+    /// @dev get active auction
     ///
-    /// @param auctionId auction id
+    /// @param _aid auction id
     /// @return the details of this auction
-    function getAuctionItem(bytes32 auctionId) external view returns (Auction memory) {
-        return auctions[auctionId];
+    function getActiveAuction(uint256 _aid) external view returns (Auction memory) {
+        require(auctionStatus[_aid] == Status.OnSell, "AM: Auction finished");
+
+        return auctions[_aid];
     }
 
-    /// @dev calculate the auction id
+    /// @notice user must approve this contract to take ownership of their nfts
+    /// @dev user sell their nft with provided price and amount
     ///
-    /// @param auction The auction to calculate
-    /// @return auction id
-    function calcItemAuctionId(Auction calldata auction) external pure returns (bytes32) {
-        return keccak256(abi.encodePacked(auction.seller, auction.tokenId, auction.price));
-    }
-
-    /// @dev use sell their nft with provided price and amount
-    ///
-    /// @param _tokenId Token id that use want to sell
+    /// @param _nftAddress Address of the nft to sell
+    /// @param _tokenIds Token id that use want to sell
     /// @param _price Price that use want to sell
-    /// @param _amount Amount that user want to sell
     function sellItem(
-        uint256 _tokenId,
-        uint256 _price,
-        uint256 _amount
+        address _nftAddress,
+        uint256[] calldata _tokenIds,
+        uint256 _price
     ) external {
-        require(_amount > 0, "Invalid param");
-
         address seller = msg.sender;
 
-        require(IERC1155(nftAddress).isApprovedForAll(seller, address(this)), "Not approved");
-
-        bytes32 auctionId = keccak256(abi.encodePacked(seller, _tokenId, _price));
-
-        // seller append more tokens with same price
-        if (auctions[auctionId].seller != address(0)) {
-            auctions[auctionId].amount += _amount;
-        } else {
-            auctions[auctionId] = Auction(seller, _tokenId, _price, _amount);
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            // transfer ownership to this contract
+            IERC721(_nftAddress).safeTransferFrom(seller, address(this), _tokenIds[i]);
         }
 
-        emit NewItemAuctionId(auctionId);
+        uint256 aId = _nextAuctionId();
+        // create new acution
+        auctions[aId] = Auction(_nftAddress, seller, _tokenIds, _price);
+
+        auctionStatus[aId] = Status.OnSell;
+
+        emit CreateNewAuction(aId);
     }
 
     /// @dev purchase the specified nft via auctionId
     ///
-    /// @param auctionId Auction id user want to buy
-    /// @param _amount Aount user want to buy
-    function purchase(bytes32 auctionId, uint256 _amount) external {
-        // TODO: optimzie gas usage
+    /// @param _aid Auction id user want to buy
+    function purchase(uint256 _aid) external {
+        require(auctionStatus[_aid] == Status.OnSell, "AM: Invalid auction status");
         address buyer = msg.sender;
-        Auction storage auction = auctions[auctionId];
-        require(auction.amount >= _amount, "Not enough token to sell");
-        uint256 cost = _amount * auction.price;
-        require(IERC20(cctAddress).balanceOf(buyer) >= cost, "Buyer funds not enough");
-
-        auction.amount -= _amount;
+        Auction storage auction = auctions[_aid];
+        uint256 cost = auction._tokenIds.length * auction.price;
+        require(IERC20(cctAddress).balanceOf(buyer) >= cost, "AM: Buyer funds not enough");
 
         uint256 fee = cost / 100;
         // 1% fee to Market owner
         SafeERC20.safeTransferFrom(IERC20(cctAddress), buyer, address(this), fee);
         // the remaining to seller
         SafeERC20.safeTransferFrom(IERC20(cctAddress), buyer, auction.seller, cost - fee);
-        IERC1155(nftAddress).safeTransferFrom(auction.seller, buyer, auction.tokenId, auction.amount, "");
+
+        // transfer nft from this contract to buyer
+        for (uint256 i = 0; i < auction._tokenIds.length; i++) {
+            IERC721(auction.nftAddress).safeTransferFrom(address(this), buyer, auction._tokenIds[i]);
+        }
+
+        delete auctions[_aid];
+
+        auctionStatus[_aid] = Status.SoldOut;
     }
 
     /// @dev revoke auction
     ///
-    /// @param auctionId Auction id to revoke
-    function revoke(bytes32 auctionId) external {
-        Auction memory auction = auctions[auctionId];
-        require(auction.seller != address(0), "unknown auctionId");
-        delete auctions[auctionId];
+    /// @param _aid Auction id to revoke
+    function revoke(uint256 _aid) external {
+        Auction memory auction = auctions[_aid];
+        require(msg.sender == auction.seller, "AM: Unautherized revoke");
+
+        delete auctions[_aid];
+
+        auctionStatus[_aid] = Status.Revoked;
     }
 
     /// @dev withraw cct token to `to` address
@@ -106,5 +121,10 @@ contract AuctionMarket is Ownable {
     function withdraw(address to) external onlyOwner {
         uint256 balance = IERC20(cctAddress).balanceOf(address(this));
         SafeERC20.safeTransfer(IERC20(cctAddress), to, balance);
+    }
+
+    function _nextAuctionId() internal returns (uint256) {
+        _auctionId.increment();
+        return _auctionId.current();
     }
 }
