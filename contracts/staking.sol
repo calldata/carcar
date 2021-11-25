@@ -109,6 +109,9 @@ contract Staking is Ownable {
         strategyWillBeRemoved[strategyId] = remove;
     }
 
+    /// @dev stake according to strategyId
+    ///
+    /// @param strategyId strategy id
     function stake(bytes32 strategyId) external {
         require(!strategyWillBeRemoved[strategyId], "Stake: This Strategy will be removed");
         StakingStrategy memory strategy = strategies[strategyId];
@@ -127,6 +130,9 @@ contract Staking is Ownable {
         emit CreateNewStaking(staker, stakeId, strategyId, block.timestamp);
     }
 
+    /// @dev unstake the specified staking
+    ///
+    /// @param stakeId Stake id
     function unstake(bytes32 stakeId) external {
         address staker = msg.sender;
 
