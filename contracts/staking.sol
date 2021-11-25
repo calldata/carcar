@@ -137,7 +137,7 @@ contract Staking is Ownable {
         StakingStrategy memory strategy = strategies[detail.strategyId];
         bytes32 stakingId = calcStakingId(staker, detail.strategyId, detail.startAt);
 
-        if (detail.startAt + strategy.duration > block.timestamp) {
+        if (detail.startAt + strategy.duration < block.timestamp) {
             // backend detect this event and deliver reward to player
             emit StakingFinished(staker, stakingId);
         } else {
@@ -145,11 +145,12 @@ contract Staking is Ownable {
             emit EarlyUnstake(staker, stakingId);
         }
 
-        delete allStakings[stakeId];
         // decrement strategy active user
         strategyActiveUsers[detail.strategyId]--;
 
+        delete allStakings[stakeId];
+
         // no matter staking finshed or not, we will give back staked token to player
-        SafeERC20.safeTransferFrom(cctToken, address(this), staker, strategy.amount);
+        SafeERC20.safeTransfer(cctToken, staker, strategy.amount);
     }
 }
