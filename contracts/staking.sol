@@ -105,6 +105,10 @@ contract Staking is Ownable {
         emit RemoveStrategy(strategyId);
     }
 
+    function getStrategyActiveUser(bytes32 strategyId) external view returns (uint256) {
+        return strategyActiveUsers[strategyId];
+    }
+
     function setStrategyWillBeRemoved(bytes32 strategyId, bool remove) external onlyOwner {
         strategyWillBeRemoved[strategyId] = remove;
     }
@@ -122,6 +126,9 @@ contract Staking is Ownable {
 
         uint256 startAt = block.timestamp;
         bytes32 stakeId = calcStakingId(staker, strategyId, startAt);
+
+        require(allStakings[stakeId].staker == address(0), "Stake: Duplicate stakeId");
+
         allStakings[stakeId] = StakingDetail(staker, strategyId, startAt);
 
         // incement strategy active user
