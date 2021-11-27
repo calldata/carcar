@@ -136,7 +136,7 @@ contract Staking is Ownable {
     function unstake(bytes32 stakeId) external {
         address staker = msg.sender;
 
-        StakingDetail storage detail = allStakings[stakeId];
+        StakingDetail memory detail = allStakings[stakeId];
 
         require(detail.staker == staker, "Stake: Unautherized caller");
 
