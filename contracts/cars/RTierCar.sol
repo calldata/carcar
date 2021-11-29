@@ -31,8 +31,12 @@ contract RTierCar is ERC721, ERC721Burnable, Ownable {
         }
     }
 
-    function batchTransferFrom(address from, address to, uint256[] calldata tokenIds) external {
-        require(from != address(0),  "R: Transfer from zero address");
+    function batchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata tokenIds
+    ) external {
+        require(from != address(0), "R: Transfer from zero address");
         require(to != address(0), "R: Transfer to zero address");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
