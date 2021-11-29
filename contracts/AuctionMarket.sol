@@ -84,6 +84,8 @@ contract AuctionMarket is Ownable {
         require(auctionStatus[_aid] == Status.OnSell, "AM: Invalid auction status");
         address buyer = msg.sender;
         Auction storage auction = auctions[_aid];
+        require(buyer != auction.seller, "AM: Buyer and seller are the same");
+
         uint256 cost = auction._tokenIds.length * auction.price;
         require(IERC20(cctAddress).balanceOf(buyer) >= cost, "AM: Buyer funds not enough");
 
@@ -108,7 +110,14 @@ contract AuctionMarket is Ownable {
     /// @param _aid Auction id to revoke
     function revoke(uint256 _aid) external {
         Auction memory auction = auctions[_aid];
+
         require(msg.sender == auction.seller, "AM: Unautherized revoke");
+        require(auctionStatus[_aid] == Status.OnSell, "AM: Not on sell");
+
+        // give back user's token
+        for (uint256 i = 0; i < auction._tokenIds.length; i++) {
+            IERC721(auction.nftAddress).safeTransferFrom(address(this), auction.seller, auction._tokenIds[i]);
+        }
 
         delete auctions[_aid];
 
