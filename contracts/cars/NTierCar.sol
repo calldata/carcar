@@ -11,8 +11,6 @@ contract NTierCar is ERC721, ERC721Burnable, Ownable {
 
     Counters.Counter private _tokenIdCounter;
 
-    bool public isPreMinted;
-
     constructor() ERC721("Normal Tier Car", "N") {}
 
     function safeMint(address to) public onlyOwner {
@@ -21,14 +19,24 @@ contract NTierCar is ERC721, ERC721Burnable, Ownable {
         _safeMint(to, tokenId);
     }
 
-    function preMint(uint256 amount, address to) external onlyOwner {
-        require(to != address(0), "N: Pre minted to zero address");
-        require(!isPreMinted, "N: Already pre minted");
+    function batchMint(address to, uint256 amount) external onlyOwner {
+        require(to != address(0), "N: Mint to zero address");
+        require(amount > 0, "N: Amount must greater than 0");
 
-        for (uint256 i = 0; i < amount; i++) {
-            safeMint(to);
+        uint256 tokenId = _tokenIdCounter.current();
+
+        for (uint256 i = tokenId; i < tokenId + amount; i++) {
+            _safeMint(to, i);
+            _tokenIdCounter.increment();
         }
+    }
 
-        isPreMinted = true;
+    function batchTransferFrom(address from, address to, uint256[] calldata tokenIds) external {
+        require(from != address(0),  "N: Transfer from zero address");
+        require(to != address(0), "N: Transfer to zero address");
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            safeTransferFrom(from, to, tokenIds[i]);
+        }
     }
 }

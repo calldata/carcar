@@ -11,24 +11,26 @@ contract SSRTierCar is ERC721, ERC721Burnable, Ownable {
 
     Counters.Counter private _tokenIdCounter;
 
-    bool public isPreMinted;
-
     constructor() ERC721("Super Super Rare Tier Car", "SSR") {}
 
-    function safeMint(address to) public onlyOwner {
+    function batchMint(address to, uint256 amount) external onlyOwner {
+        require(to != address(0), "SSR: Mint to zero address");
+        require(amount > 0, "SSR: Amount must greater than 0");
+
         uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
+
+        for (uint256 i = tokenId; i < tokenId + amount; i++) {
+            _safeMint(to, i);
+            _tokenIdCounter.increment();
+        }
     }
 
-    function preMint(uint256 amount, address to) external onlyOwner {
-        require(to != address(0), "SSR: Pre minted to zero address");
-        require(!isPreMinted, "SSR: Already pre minted");
+    function batchTransferFrom(address from, address to, uint256[] calldata tokenIds) external {
+        require(from != address(0),  "SSR: Transfer from zero address");
+        require(to != address(0), "SSR: Transfer to zero address");
 
-        for (uint256 i = 0; i < amount; i++) {
-            safeMint(to);
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            safeTransferFrom(from, to, tokenIds[i]);
         }
-
-        isPreMinted = true;
     }
 }
