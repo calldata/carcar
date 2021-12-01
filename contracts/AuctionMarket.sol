@@ -26,6 +26,8 @@ contract AuctionMarket is Ownable {
     }
 
     event CreateNewAuction(uint256 indexed auctionId);
+    event Purchase(address indexed addr, uint256[] tokenIds);
+    event Revoke(address indexed addr, uint256[] tokenIds);
 
     // mapping of auctionId to Auction
     mapping(uint256 => Auction) public auctions;
@@ -100,6 +102,8 @@ contract AuctionMarket is Ownable {
             IERC721(auction.nftAddress).safeTransferFrom(address(this), buyer, auction._tokenIds[i]);
         }
 
+        emit Purchase(buyer, auction._tokenIds);
+
         delete auctions[_aid];
 
         auctionStatus[_aid] = Status.SoldOut;
@@ -118,6 +122,8 @@ contract AuctionMarket is Ownable {
         for (uint256 i = 0; i < auction._tokenIds.length; i++) {
             IERC721(auction.nftAddress).safeTransferFrom(address(this), auction.seller, auction._tokenIds[i]);
         }
+
+        emit Revoke(auction.seller, auction._tokenIds);
 
         delete auctions[_aid];
 
