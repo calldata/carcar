@@ -88,6 +88,10 @@ contract AuctionMarket is Ownable {
         Auction storage auction = auctions[_aid];
         require(buyer != auction.seller, "AM: Buyer and seller are the same");
 
+        delete auctions[_aid];
+
+        auctionStatus[_aid] = Status.SoldOut;
+
         uint256 cost = auction._tokenIds.length * auction.price;
         require(IERC20(cctAddress).balanceOf(buyer) >= cost, "AM: Buyer funds not enough");
 
@@ -103,10 +107,6 @@ contract AuctionMarket is Ownable {
         }
 
         emit Purchase(buyer, auction._tokenIds);
-
-        delete auctions[_aid];
-
-        auctionStatus[_aid] = Status.SoldOut;
     }
 
     /// @dev revoke auction
