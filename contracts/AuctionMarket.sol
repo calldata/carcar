@@ -89,8 +89,6 @@ contract AuctionMarket is Ownable, ERC721Holder {
         Auction storage auction = auctions[_aid];
         require(buyer != auction.seller, "AM: Buyer and seller are the same");
 
-        delete auctions[_aid];
-
         auctionStatus[_aid] = Status.SoldOut;
 
         uint256 cost = auction._tokenIds.length * auction.price;
@@ -106,6 +104,8 @@ contract AuctionMarket is Ownable, ERC721Holder {
         for (uint256 i = 0; i < auction._tokenIds.length; i++) {
             IERC721(auction.nftAddress).safeTransferFrom(address(this), buyer, auction._tokenIds[i]);
         }
+
+        delete auctions[_aid];
 
         emit Purchase(_aid, buyer);
     }
