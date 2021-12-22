@@ -18,4 +18,29 @@ contract SRTierUpgradeComp is ERC721, ERC721Burnable, Ownable {
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
     }
+
+    function batchMint(address to, uint256 amount) external onlyOwner {
+        require(to != address(0), "SRTUC: Mint to zero address");
+        require(amount > 0, "SRTUC: Amount must greater than 0");
+
+        uint256 tokenId = _tokenIdCounter.current();
+
+        for (uint256 i = tokenId; i < tokenId + amount; i++) {
+            _safeMint(to, i);
+            _tokenIdCounter.increment();
+        }
+    }
+
+    function batchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata tokenIds
+    ) external {
+        require(from != address(0), "SRTUC: Transfer from zero address");
+        require(to != address(0), "SRTUC: Transfer to zero address");
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            safeTransferFrom(from, to, tokenIds[i]);
+        }
+    }
 }
