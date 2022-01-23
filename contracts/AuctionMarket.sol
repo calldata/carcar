@@ -119,16 +119,16 @@ contract AuctionMarket is Ownable, ERC721Holder {
         require(msg.sender == auction.seller, "AM: Unautherized revoke");
         require(auctionStatus[_aid] == Status.OnSell, "AM: Not on sell");
 
+        auctionStatus[_aid] = Status.Revoked;
+
         // give back user's token
         for (uint256 i = 0; i < auction._tokenIds.length; i++) {
             IERC721(auction.nftAddress).safeTransferFrom(address(this), auction.seller, auction._tokenIds[i]);
         }
 
-        emit Revoke(_aid);
-
         delete auctions[_aid];
 
-        auctionStatus[_aid] = Status.Revoked;
+        emit Revoke(_aid);
     }
 
     /// @dev withraw cct token to `to` address
